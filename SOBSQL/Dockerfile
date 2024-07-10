@@ -9,9 +9,6 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
-# Install unixODBC and other dependencies
-RUN apt-get update && apt-get install -y unixodbc-dev
-
 # Install pip requirements
 COPY requirements.txt .
 RUN python -m pip install -r requirements.txt
@@ -19,14 +16,17 @@ RUN python -m pip install -r requirements.txt
 WORKDIR /app
 COPY . /app
 
-# Install dependencies
+
+# Install system dependencies and ODBC driver
 RUN apt-get update && \
-    apt-get install -y curl gnupg && \
+    apt-get install -y curl gnupg apt-transport-https && \
     curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
     curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
     apt-get update && \
-    ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
-
+    ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+    
 # Creates a non-root user with an explicit UID and adds permission to access the /app folder
 # For more info, please refer to https://aka.ms/vscode-docker-python-configure-containers
 RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
